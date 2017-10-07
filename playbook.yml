@@ -1,0 +1,51 @@
+- name: F5 management
+  hosts: f5
+  gather_facts: False
+  tasks:
+    - name: run show version on remote devices
+      bigip_command:
+        commands: show sys version
+        server: "{{ item }}"
+        password: "admin"
+        user: "admin"
+        validate_certs: "no"
+      register: f5_version
+      delegate_to: 127.0.0.1
+      with_items: "{{ groups['f5'] }}"
+
+    - name: debug
+      debug:
+        msg: "{{ item.stdout_lines }}"
+      with_items: "{{ f5_version.results }}"
+
+    - name: tmsh prefixes will automatically be handled
+      bigip_command:
+        commands:
+          - show sys version
+          - tmsh list ltm virtual
+        server: "{{ item }}"
+        password: "admin"
+        user: "admin"
+        validate_certs: "no"
+      register: f5_version
+      delegate_to: localhost
+      with_items: "{{ groups['f5'] }}"
+
+    - name: debug
+      debug:
+        msg: "{{ item.stdout_lines }}"
+      with_items: "{{ f5_version.results }}"
+ 
+    - name: version of Big3 daemon
+      raw: /shared/bin/big3d -v
+      register: big3dv
+      tags:
+        - big3d
+
+    - name: debug
+      remote_user: root
+      debug:
+        msg: "{{ big3dv }}"
+      tags:
+        - big3d
+
